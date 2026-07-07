@@ -8,7 +8,8 @@ if (!connectionString) {
   process.exit(1);
 }
 
-const sql = postgres(connectionString, { max: 1, ssl: 'require' });
+const isLocal = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const sql = postgres(connectionString, { max: 1, ssl: isLocal ? false : 'require' });
 const db = drizzle(sql);
 
 console.log('Running migrations…');

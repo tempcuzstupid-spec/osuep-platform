@@ -19,8 +19,8 @@ services:
     plan: starter
     region: oregon
     rootDir: apps/api
-    buildCommand: pnpm install --filter @osuep/api... --frozen-lockfile=false && pnpm --filter @osuep/api run build
-    startCommand: pnpm --filter @osuep/api run db:migrate && pnpm --filter @osuep/api run start
+    buildCommand: pnpm install --filter @osuep/api... --frozen-lockfile=false && pnpm --filter @osuep/db run build && pnpm --filter @osuep/auth run build && pnpm --filter @osuep/api run build
+    startCommand: pnpm --filter @osuep/db run migrate && pnpm --filter @osuep/api run start
     healthCheckPath: /readyz
     autoDeploy: false
     envVars:
@@ -41,7 +41,7 @@ services:
       - key: RESEND_API_KEY
         sync: false
       - key: EMAIL_FROM
-        value: "One Stop Uniforms <no-reply@osuep-website.onrender.com>"
+        value: "One Stop Uniforms <onboarding@resend.dev>"
       - key: WEB_ORIGIN
         sync: false
       - key: API_PUBLIC_URL
