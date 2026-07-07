@@ -1,0 +1,38 @@
+# Node
+node_modules/
+.pnpm-store/
+.pnp.*
+
+# Build outputs
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor
+.vscode/
+.idea/
+.DS_Store
+
+# Test
+coverage/
+
+# Storage - never commit actual artwork/production files
+storage/artwork/*
+storage/proofs/*
+!storage/artwork/.gitkeep
+!storage/proofs/.gitkeep
+!storage/brand/.gitkeep

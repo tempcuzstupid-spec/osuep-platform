@@ -1,0 +1,70 @@
+# Render blueprint — defines both services (web + api)
+# Apply via: POST https://api.render.com/v1/blueprints with the rendered manifest
+# or via the Render dashboard "New > Blueprint" flow pointing at this file.
+#
+# Prerequisites (set in Render dashboard before first deploy):
+#   - DATABASE_URL: Neon connection string
+#   - SESSION_SECRET: 32+ char random string
+#   - COOKIE_SECRET:  32+ char random string
+#   - RESEND_API_KEY: from resend.com
+#   - API_PUBLIC_URL: https://<api-service>.onrender.com (filled after first deploy)
+#   - WEB_ORIGIN:     https://<web-service>.onrender.com
+#
+# Trigger: manual (per user rule #4)
+
+services:
+  - type: web
+    name: osuep-api
+    runtime: node
+    plan: starter
+    region: oregon
+    rootDir: apps/api
+    buildCommand: pnpm install --filter @osuep/api... --frozen-lockfile=false && pnpm --filter @osuep/api run build
+    startCommand: pnpm --filter @osuep/api run db:migrate && pnpm --filter @osuep/api run start
+    healthCheckPath: /readyz
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4000"
+      - key: HOST
+        value: 0.0.0.0
+      - key: LOG_LEVEL
+        value: info
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_SECRET
+        generate: true
+      - key: COOKIE_SECRET
+        generate: true
+      - key: RESEND_API_KEY
+        sync: false
+      - key: EMAIL_FROM
+        value: "One Stop Uniforms <no-reply@osuep-website.onrender.com>"
+      - key: WEB_ORIGIN
+        sync: false
+      - key: API_PUBLIC_URL
+        sync: false
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"
+
+  - type: web
+    name: osuep-web
+    runtime: node
+    plan: starter
+    region: oregon
+    rootDir: apps/web
+    buildCommand: pnpm install --filter @osuep/web... --frozen-lockfile=false && pnpm --filter @osuep/web run build
+    startCommand: pnpm --filter @osuep/web run start
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: NEXT_PUBLIC_APP_NAME
+        value: "One Stop Uniforms"
+      - key: NPM_CONFIG_PRODUCTION
+        value: "false"

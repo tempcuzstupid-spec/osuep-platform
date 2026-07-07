@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  html, body {
+    @apply bg-midnight-900 text-zinc-100;
+    background-image:
+      radial-gradient(ellipse at top, rgba(124, 58, 237, 0.10), transparent 60%),
+      radial-gradient(ellipse at bottom, rgba(31, 16, 70, 0.10), transparent 60%);
+    background-attachment: fixed;
+  }
+  ::selection {
+    background: rgba(167, 139, 250, 0.4);
+    color: #fff;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 font-medium text-sm
+           transition-all duration-200 ease-out
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-400 focus-visible:ring-offset-2 focus-visible:ring-offset-midnight-900
+           disabled:opacity-50 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply bg-gradient-purple text-white shadow-glow-purple hover:brightness-110 hover:-translate-y-px;
+  }
+  .btn-ghost {
+    @apply border border-chrome-700 text-zinc-200 hover:border-ink-400 hover:text-white;
+  }
+  .btn-gold {
+    @apply bg-gradient-to-r from-gold-500 to-gold-400 text-midnight-900 font-semibold hover:brightness-110 hover:-translate-y-px shadow-glow-gold;
+  }
+  .input {
+    @apply w-full rounded-lg border border-chrome-700 bg-midnight-800/60 px-4 py-2.5 text-zinc-100
+           placeholder:text-chrome-400 transition-colors
+           focus:border-ink-400 focus:outline-none focus:ring-2 focus:ring-ink-400/30;
+  }
+  .label {
+    @apply block text-xs font-medium uppercase tracking-wider text-chrome-300 mb-1.5;
+  }
+  .card {
+    @apply rounded-2xl border border-chrome-700/60 bg-midnight-800/60 backdrop-blur-sm p-6
+           shadow-chrome transition-all duration-200;
+  }
+  .card-hover {
+    @apply hover:border-ink-500/60 hover:shadow-glow-purple;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-full border border-chrome-700 bg-midnight-800/80 px-3 py-1 text-xs font-medium text-zinc-300;
+  }
+  .chrome-text {
+    background: linear-gradient(180deg, #fff 0%, #cbd5e1 50%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .gold-text {
+    background: linear-gradient(135deg, #f5b700 0%, #c8862a 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .divider {
+    @apply h-px bg-gradient-to-r from-transparent via-chrome-700 to-transparent;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 3px; }
+}
