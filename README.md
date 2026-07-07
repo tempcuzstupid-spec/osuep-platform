@@ -69,3 +69,13 @@ pnpm dev
 ## Spec
 
 The 8-volume master specification is documented at https://osuep-website.onrender.com (a companion spec-publishing site, also in this org).
+
+## Storage
+
+Static brand assets and master artwork live in `storage/` and are committed to the repo:
+
+- `storage/brand/` — logos, fonts, color tokens (JSON, SVG, PNG)
+- `storage/artwork/` — master artwork files (per customer/version)
+- `storage/proofs/` — production proofs (small PNGs, JPEGs)
+
+In P3 we'll move dynamic uploads (customer-supplied artwork, large production files) to **Cloudflare R2** via a `Storage` interface in the API. For P0 the GitHub-backed approach is intentional — it keeps every committed asset versioned alongside the code that references it.

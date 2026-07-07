@@ -33,6 +33,7 @@ coverage/
 # Storage - never commit actual artwork/production files
 storage/artwork/*
 storage/proofs/*
+storage/brand/*
 !storage/artwork/.gitkeep
 !storage/proofs/.gitkeep
 !storage/brand/.gitkeep
