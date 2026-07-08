@@ -3,8 +3,8 @@ import fp from 'fastify-plugin';
 import { loadSession, SESSION_COOKIE, touchSession } from '../services/auth.js';
 import { getCtx } from './request-context.js';
 import { UnauthorizedError } from './error-handler.js';
-import { db } from '../db/index.js';
-import { memberships } from '../db/index.js';
+import { db } from '@osuep/db';
+import { memberships } from '@osuep/db';
 import { eq, and } from 'drizzle-orm';
 
 declare module 'fastify' {

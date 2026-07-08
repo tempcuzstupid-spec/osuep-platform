@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { db } from '../db/index.js';
-import { users, memberships, organizations, invitations } from '../db/index.js';
+import { db } from '@osuep/db';
+import { users, memberships, organizations, invitations } from '@osuep/db';
 import { eq, and, isNull } from 'drizzle-orm';
 import { env } from '../env.js';
 import { BadRequestError, UnauthorizedError } from '../plugins/error-handler.js';

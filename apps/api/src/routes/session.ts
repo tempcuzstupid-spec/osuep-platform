@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { db } from '../db/index.js';
-import { sessions, memberships } from '../db/index.js';
+import { db } from '@osuep/db';
+import { sessions, memberships } from '@osuep/db';
 import { and, eq } from 'drizzle-orm';
 import { SESSION_COOKIE } from '../services/auth.js';
 import { getCtx } from '../plugins/request-context.js';
