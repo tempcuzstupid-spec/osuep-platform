@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { db } from '@osuep/db';
-import { users, memberships, organizations, invitations } from '@osuep/db/schema';
+import { db } from '../db/index.js';
+import { users, memberships, organizations, invitations } from '../db/index.js';
 import { eq, and, isNull } from 'drizzle-orm';
 import { env } from '../env.js';
 import { BadRequestError, UnauthorizedError } from '../plugins/error-handler.js';
@@ -90,11 +90,14 @@ export async function authRoutes(app: FastifyInstance) {
 
   /* ---------- Logout ---------- */
   app.post('/logout', async (req, reply) => {
-    const sid = req.cookies[SESSION_COOKIE];
-    if (sid) {
-      try {
-        await revokeSession(sid);
-      } catch {}
+    const raw = req.cookies[SESSION_COOKIE];
+    if (raw) {
+      const unsigned = req.unsignCookie(raw);
+      if (unsigned.valid) {
+        try {
+          await revokeSession(unsigned.value);
+        } catch {}
+      }
     }
     clearSessionCookie(reply);
     return { ok: true };
@@ -123,8 +126,11 @@ export async function authRoutes(app: FastifyInstance) {
 
   /* ---------- Me (current session) ---------- */
   app.get('/me', async (req) => {
-    const sid = req.cookies[SESSION_COOKIE];
-    if (!sid) throw new UnauthorizedError('Not signed in');
+    const raw = req.cookies[SESSION_COOKIE];
+    if (!raw) throw new UnauthorizedError('Not signed in');
+    const unsigned = req.unsignCookie(raw);
+    if (!unsigned.valid) throw new UnauthorizedError('Invalid session signature');
+    const sid = unsigned.value;
     const session = await loadSession(sid);
     if (!session) throw new UnauthorizedError('Session expired');
     await touchSession(sid);
