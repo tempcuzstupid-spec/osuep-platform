@@ -64,6 +64,9 @@ export default function HomePage() {
               <Link href="/register" className="btn btn-gold px-7 py-3 text-base">
                 Start your organization
               </Link>
+              <Link href="/catalog" className="btn btn-ghost px-7 py-3 text-base">
+                Browse the catalog
+              </Link>
               <Link href="#platform" className="btn btn-ghost px-7 py-3 text-base">
                 Explore the platform
               </Link>
