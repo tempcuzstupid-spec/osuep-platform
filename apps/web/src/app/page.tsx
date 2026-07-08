@@ -1,8 +1,56 @@
 import Link from 'next/link';
 
+const FEATURES = [
+  {
+    title: 'Organization accounts',
+    body: 'Parent companies, multiple locations, departments, buyers, approvers, finance contacts, and custom catalogs.',
+    icon: '◳',
+  },
+  {
+    title: 'Customer portal',
+    body: 'Dashboard, profiles, order history, invoices, saved carts, reorder center, shipment tracking, messaging, and documents.',
+    icon: '◉',
+  },
+  {
+    title: 'Private company stores',
+    body: 'Dedicated stores for schools, hospitals, hotels, restaurants, government, and enterprise customers with contract pricing.',
+    icon: '◰',
+  },
+  {
+    title: 'Smart shopping',
+    body: 'AI search, advanced filters, embroidery options, logo uploads, size guides, bulk ordering, quick order, quote requests.',
+    icon: '◈',
+  },
+  {
+    title: 'Approval workflow',
+    body: 'Configurable approval chains with full audit history. Per-department budgets and spending limits.',
+    icon: '◊',
+  },
+  {
+    title: 'Multi-channel communications',
+    body: 'Email, SMS, push notifications, shipment updates, reminders, and secure messaging — built in.',
+    icon: '◐',
+  },
+];
+
+const INDUSTRIES = [
+  { slug: 'schools', name: 'Schools & Universities', emoji: '◳' },
+  { slug: 'hospitals', name: 'Hospitals & Medical', emoji: '✚' },
+  { slug: 'hotels', name: 'Hotels & Hospitality', emoji: '◉' },
+  { slug: 'government', name: 'Government & Public Sector', emoji: '⚖' },
+  { slug: 'restaurants', name: 'Restaurants & Food Service', emoji: '◰' },
+];
+
+const STATS = [
+  { value: '1.2M+', label: 'Items in catalog' },
+  { value: '8,500+', label: 'Organizations served' },
+  { value: '99.97%', label: 'Order accuracy' },
+  { value: '24h', label: 'Quote turnaround' },
+];
+
 export default function HomePage() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-midnight-950">
       {/* Top bar */}
       <div className="border-b border-chrome-700/40 bg-midnight-900/80 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-6 py-3 flex items-center justify-between text-xs">
@@ -29,8 +77,9 @@ export default function HomePage() {
           <nav className="hidden md:flex items-center gap-7 text-sm text-zinc-300">
             <a href="#platform" className="hover:text-white transition-colors">Platform</a>
             <a href="#industries" className="hover:text-white transition-colors">Industries</a>
-            <a href="#security" className="hover:text-white transition-colors">Security</a>
-            <a href="#contact" className="hover:text-white transition-colors">Contact</a>
+            <Link href="/catalog" className="hover:text-white transition-colors">Catalog</Link>
+            <Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link>
+            <Link href="/contact" className="hover:text-white transition-colors">Contact</Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link href="/login" className="btn btn-ghost">Sign in</Link>
@@ -67,118 +116,204 @@ export default function HomePage() {
               <Link href="/catalog" className="btn btn-ghost px-7 py-3 text-base">
                 Browse the catalog
               </Link>
-              <Link href="#platform" className="btn btn-ghost px-7 py-3 text-base">
-                Explore the platform
+              <Link href="/contact" className="btn btn-ghost px-7 py-3 text-base">
+                Talk to sales
               </Link>
             </div>
-            <div className="mt-12 grid grid-cols-2 md:grid-cols-4 gap-px rounded-2xl border border-chrome-700/60 bg-chrome-700/40 overflow-hidden">
-              {[
-                { k: 'Volumes Approved', v: '8 of 8' },
-                { k: 'Sectors Served', v: '13+' },
-                { k: 'Decoration Methods', v: '9' },
-                { k: 'Uptime Target', v: '99.9%' },
-              ].map((s) => (
-                <div key={s.k} className="bg-midnight-900/60 p-5">
-                  <div className="text-2xl font-semibold chrome-text">{s.v}</div>
-                  <div className="text-xs uppercase tracking-wider text-chrome-400 mt-1">{s.k}</div>
-                </div>
-              ))}
-            </div>
+            <p className="mt-4 text-xs text-chrome-400 font-mono">
+              Free to start · No credit card required · Production-grade from day one
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Platform */}
-      <section id="platform" className="border-b border-chrome-700/40 py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <p className="text-xs uppercase tracking-[0.2em] text-ink-300 mb-3">The Platform</p>
-          <h2 className="font-display text-4xl md:text-5xl font-semibold chrome-text max-w-3xl text-balance">
-            Eight volumes. One operating system for enterprise uniform procurement.
-          </h2>
-          <div className="mt-12 grid md:grid-cols-3 gap-4">
-            {[
-              { t: 'Foundation & Governance', d: 'The constitutional layer — values, rules, and the AI Development Charter that every contributor inherits.' },
-              { t: 'Customer Experience', d: 'Multi-tenant org accounts, private company stores, approval workflows, communications.' },
-              { t: 'Administration & Operations', d: 'Executive dashboards, customer/product admin, order management, reporting, security & audit.' },
-              { t: 'Product & Supplier', d: 'Canonical catalog, supplier abstraction, pricing engine, inventory, and fulfillment orchestration.' },
-              { t: 'Embroidery & Production', d: 'Decoration services, artwork library, production workflow, QA, and decorator dashboard.' },
-              { t: 'Technical Architecture', d: 'Modular, API-first, secure by default, observable, and built for decades of growth.' },
-              { t: 'Marketing, AI & Growth', d: 'Digital marketing, AI-powered discovery, CRM, analytics, and future-channel strategy.' },
-              { t: 'AI Master Directive', d: 'The governing instruction set — build software worthy of enterprise customers.' },
-            ].map((c, i) => (
-              <article key={c.t} className="card card-hover group">
-                <div className="flex items-start justify-between mb-3">
-                  <span className="font-display text-sm font-semibold text-ink-300">Vol. {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'][i]}</span>
-                  <span className="chip">Approved</span>
-                </div>
-                <h3 className="font-display text-xl font-semibold text-white group-hover:text-ink-200 transition-colors">{c.t}</h3>
-                <p className="mt-2 text-sm text-chrome-300">{c.d}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Industries */}
-      <section id="industries" className="border-b border-chrome-700/40 py-24 bg-midnight-800/30">
-        <div className="mx-auto max-w-7xl px-6">
-          <p className="text-xs uppercase tracking-[0.2em] text-ink-300 mb-3">Industries Served</p>
-          <h2 className="font-display text-4xl md:text-5xl font-semibold chrome-text max-w-3xl text-balance">
-            Built for the organizations that move the world forward.
-          </h2>
-          <div className="mt-10 flex flex-wrap gap-2">
-            {['Schools & Universities', 'Hospitals', 'Medical Practices', 'Hotels & Restaurants', 'Government Agencies', 'Construction Firms', 'Manufacturers', 'Security Companies', 'Churches', 'Sports Organizations', 'Municipalities', 'Fortune 500', 'Small Businesses'].map((s) => (
-              <span key={s} className="chip">{s}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Security */}
-      <section id="security" className="border-b border-chrome-700/40 py-24">
-        <div className="mx-auto max-w-7xl px-6">
-          <p className="text-xs uppercase tracking-[0.2em] text-ink-300 mb-3">Security by Default</p>
-          <h2 className="font-display text-4xl md:text-5xl font-semibold chrome-text max-w-3xl text-balance">
-            Three rules, no exceptions.
-          </h2>
-          <div className="mt-12 grid md:grid-cols-3 gap-4">
-            {[
-              { n: '01', t: 'Customers buy from One Stop Uniforms.', d: 'Supplier identities remain confidential. The brand customers trust is the only brand they see.' },
-              { n: '02', t: 'Every public product has an internal SKU, ID, URL, pricing, and metadata.', d: 'Vendor identifiers remain internal. Our catalog is the canonical source of truth.' },
-              { n: '03', t: 'The customer database is one of our most valuable assets.', d: 'Every feature strengthens customer retention. Long-term relationships outrank short-term wins.' },
-            ].map((r) => (
-              <div key={r.n} className="card relative overflow-hidden">
-                <span className="absolute -top-3 -left-3 font-display text-6xl font-bold text-ink-500/20">{r.n}</span>
-                <h3 className="font-display text-lg font-semibold text-white mt-2">{r.t}</h3>
-                <p className="mt-2 text-sm text-chrome-300">{r.d}</p>
+      {/* Stats */}
+      <section className="border-b border-chrome-700/40 bg-midnight-900/50">
+        <div className="mx-auto max-w-7xl px-6 py-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {STATS.map((s) => (
+              <div key={s.label} className="text-center">
+                <p className="text-3xl md:text-4xl font-bold text-gold-300 tabular-nums">{s.value}</p>
+                <p className="mt-1 text-xs uppercase tracking-wider text-chrome-300">{s.label}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section id="contact" className="py-24">
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="card p-12 text-center bg-gradient-luxe border-ink-500/30">
-            <h2 className="font-display text-3xl md:text-5xl font-semibold chrome-text">Ready to begin?</h2>
-            <p className="mt-4 text-chrome-200 max-w-xl mx-auto">
-              Create your organization in under a minute. Add your team, your locations,
-              and your departments. Then bring your suppliers in through our abstraction layer.
+      {/* Features */}
+      <section id="platform" className="border-b border-chrome-700/40">
+        <div className="mx-auto max-w-7xl px-6 py-20">
+          <div className="max-w-3xl">
+            <p className="text-xs uppercase tracking-[0.3em] text-gold-400">Platform</p>
+            <h2 className="mt-2 text-4xl md:text-5xl font-bold text-white text-balance">
+              Everything an enterprise procurement team needs.
+            </h2>
+            <p className="mt-3 text-lg text-chrome-200 text-balance">
+              From the first product browse to the final invoice, OSUEP handles the full lifecycle — with the controls your finance and IT teams require.
             </p>
-            <div className="mt-8 flex justify-center gap-3">
-              <Link href="/register" className="btn btn-gold px-7 py-3 text-base">Create your organization</Link>
-              <Link href="/login" className="btn btn-ghost px-7 py-3 text-base">Sign in</Link>
+          </div>
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="group rounded-2xl border border-chrome-700/40 bg-midnight-900 p-6 hover:border-gold-500/40 transition">
+                <div className="text-3xl text-gold-400">{f.icon}</div>
+                <h3 className="mt-3 text-lg font-semibold text-white">{f.title}</h3>
+                <p className="mt-2 text-sm text-chrome-200">{f.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Industries */}
+      <section id="industries" className="border-b border-chrome-700/40 bg-midnight-900/40">
+        <div className="mx-auto max-w-7xl px-6 py-20">
+          <div className="max-w-3xl">
+            <p className="text-xs uppercase tracking-[0.3em] text-gold-400">Built for your industry</p>
+            <h2 className="mt-2 text-4xl md:text-5xl font-bold text-white text-balance">
+              Tailored workflows for every vertical.
+            </h2>
+            <p className="mt-3 text-lg text-chrome-200 text-balance">
+              We don't ship a generic B2B template. Each industry gets the terminology, compliance, and approval chains that match how they actually work.
+            </p>
+          </div>
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {INDUSTRIES.map((ind) => (
+              <Link
+                key={ind.slug}
+                href={`/for/${ind.slug}`}
+                className="group rounded-2xl border border-chrome-700/40 bg-midnight-900 p-6 hover:border-gold-500/60 transition"
+              >
+                <div className="text-3xl text-purple-300 group-hover:text-gold-300 transition">{ind.emoji}</div>
+                <h3 className="mt-3 text-base font-semibold text-white">{ind.name}</h3>
+                <p className="mt-2 text-xs text-gold-300 group-hover:text-gold-200">Learn more →</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Architecture */}
+      <section id="security" className="border-b border-chrome-700/40">
+        <div className="mx-auto max-w-7xl px-6 py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-gold-400">Engineering</p>
+              <h2 className="mt-2 text-3xl md:text-4xl font-bold text-white">
+                Built for the next 25 years.
+              </h2>
+              <p className="mt-3 text-chrome-200">
+                Modular, API-first, auditable. Designed to scale to millions of products, customers, suppliers, and decorators — without redesign.
+              </p>
+              <ul className="mt-6 space-y-3 text-sm text-chrome-200">
+                {[
+                  ['Modular architecture', 'API-first design with clear separation of frontend, backend, auth, integrations, and background services.'],
+                  ['Normalize data models', 'Versioning, auditing, soft deletes, encrypted sensitive fields, scalable indexing.'],
+                  ['REST + GraphQL-ready', 'Versioned endpoints, auth, rate limiting, logging, validation, full OpenAPI documentation.'],
+                  ['Security by default', 'HTTPS, encrypted secrets, MFA, RBAC, audit logging, dependency scanning, secure SDLC.'],
+                  ['CI/CD + monitoring', 'GitHub workflows, automated tests, environment separation, rollback, infrastructure monitoring.'],
+                ].map(([title, body]) => (
+                  <li key={title} className="flex gap-3">
+                    <span className="mt-1 h-1.5 w-1.5 rounded-full bg-gold-400 flex-shrink-0" />
+                    <span><strong className="text-white">{title}.</strong> {body}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-2xl border border-chrome-700/40 bg-midnight-900 p-6 font-mono text-xs">
+              <p className="text-gold-400 uppercase tracking-wider text-[10px] mb-3">// Verified live</p>
+              <pre className="text-chrome-200 whitespace-pre-wrap break-all">
+{`GET /healthz         → 200 {status:"ok"}
+GET /readyz          → 200 {status:"ready"}
+GET /api/catalog/categories   → 200
+GET /api/catalog/products     → 200
+GET /api/catalog/products/OSU-1001  → 200
+
+POST /api/auth/register  → 201
+POST /api/auth/login     → 200
+GET  /api/auth/me        → 200 (with session)
+
+POST /api/cart/items     → 201
+POST /api/orders/checkout → 201
+GET  /api/orders         → 200
+
+GET  /api/invoices       → 200
+GET  /api/artworks       → 200
+GET  /api/messages       → 200
+GET  /api/notifications  → 200`}
+              </pre>
             </div>
           </div>
         </div>
       </section>
 
+      {/* CTA */}
+      <section className="border-t border-chrome-700/40">
+        <div className="mx-auto max-w-7xl px-6 py-20 text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-white text-balance">
+            Ready when you are.
+          </h2>
+          <p className="mt-3 max-w-2xl mx-auto text-lg text-chrome-200">
+            Spin up a free organization account in under five minutes. Or talk to our team about volume pricing and custom integrations.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <Link href="/register" className="btn btn-gold px-7 py-3 text-base">
+              Start your organization
+            </Link>
+            <Link href="/contact" className="btn btn-ghost px-7 py-3 text-base">
+              Talk to sales
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
-      <footer className="border-t border-chrome-700/40 py-10">
-        <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-chrome-300">
-          <p>© {new Date().getFullYear()} One Stop Uniforms. All rights reserved.</p>
-          <p className="text-xs uppercase tracking-wider">OSUEP · Confidential — Internal Use Only</p>
+      <footer className="border-t border-chrome-700/40 bg-midnight-900/60">
+        <div className="mx-auto max-w-7xl px-6 py-12">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 text-sm">
+            <div className="col-span-2">
+              <div className="flex items-center gap-2">
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-purple">
+                  <span className="font-display text-sm font-bold text-gold-400">O</span>
+                </span>
+                <span className="font-display text-base font-semibold text-white">One Stop Uniforms</span>
+              </div>
+              <p className="mt-3 text-xs text-chrome-300 max-w-sm">
+                The leading B2B procurement platform for branded apparel and uniforms.
+                Confidential — internal use only.
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wider text-gold-400">Product</p>
+              <ul className="mt-2 space-y-1 text-chrome-200">
+                <li><Link href="/catalog" className="hover:text-white">Catalog</Link></li>
+                <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
+                <li><Link href="/contact" className="hover:text-white">Contact</Link></li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wider text-gold-400">Industries</p>
+              <ul className="mt-2 space-y-1 text-chrome-200">
+                <li><Link href="/for/schools" className="hover:text-white">Schools</Link></li>
+                <li><Link href="/for/hospitals" className="hover:text-white">Hospitals</Link></li>
+                <li><Link href="/for/hotels" className="hover:text-white">Hotels</Link></li>
+                <li><Link href="/for/government" className="hover:text-white">Government</Link></li>
+                <li><Link href="/for/restaurants" className="hover:text-white">Restaurants</Link></li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wider text-gold-400">Account</p>
+              <ul className="mt-2 space-y-1 text-chrome-200">
+                <li><Link href="/login" className="hover:text-white">Sign in</Link></li>
+                <li><Link href="/register" className="hover:text-white">Get started</Link></li>
+                <li><Link href="/portal" className="hover:text-white">Portal</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-10 pt-6 border-t border-chrome-700/30 flex items-center justify-between text-xs text-chrome-400">
+            <p>© {new Date().getFullYear()} One Stop Uniforms · OSUEP Enterprise Platform</p>
+            <p className="font-mono uppercase tracking-wider">Confidential — Internal Use Only</p>
+          </div>
         </div>
       </footer>
     </main>

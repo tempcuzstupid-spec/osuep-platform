@@ -15,6 +15,13 @@
       "when": 1783476398975,
       "tag": "0001_smooth_lily_hollister",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1783481222544,
+      "tag": "0002_optimal_george_stacy",
+      "breakpoints": true
     }
   ]
 }

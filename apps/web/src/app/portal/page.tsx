@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { api, ApiException } from '@/lib/api';
 
 type Me = {
-  user: { id: string; email: string; fullName: string | null; mfaEnabled: boolean };
+  user: { id: string; email: string; fullName: string | null; mfaEnabled: boolean; isPlatformAdmin: boolean };
   session: { id: string; state: string; activeOrgId: string | null; activeMembershipId: string | null };
   memberships: Array<{
     membershipId: string;
@@ -18,253 +18,363 @@ type Me = {
   }>;
 };
 
-type Org = { id: string; name: string; slug: string; type: string; status: string; createdAt: string };
-type Location = { id: string; name: string; code: string | null; isPrimary: boolean; city: string | null; status: string };
-type Department = { id: string; name: string; code: string | null; status: string };
-type Member = {
-  userId: string;
-  email: string;
-  fullName: string | null;
-  jobTitle: string | null;
+type Order = {
+  id: string;
+  orderNumber: string;
   status: string;
-  role: string;
-  membershipId: string;
-  mfaEnabled: boolean;
-  lastLoginAt: string | null;
+  total: string;
+  placedAt: string | null;
+  expectedAt: string | null;
+  itemCount: number;
 };
+
+type CartItem = {
+  id: string;
+  sku: string;
+  productName: string;
+  size: string | null;
+  color: string | null;
+  quantity: number;
+  unitPrice: string;
+  customization: any;
+};
+
+type Cart = {
+  id: string;
+  status: string;
+  subtotal: string;
+  total: string;
+  itemCount?: number;
+};
+
+type Notification = {
+  id: string;
+  kind: string;
+  title: string;
+  body: string | null;
+  href: string | null;
+  readAt: string | null;
+  createdAt: string;
+};
+
+function statusTone(s: string): string {
+  if (['shipped', 'delivered', 'approved'].includes(s)) return 'bg-emerald-600/15 text-emerald-300 border-emerald-500/30';
+  if (['pending_approval', 'in_production', 'ready_to_ship'].includes(s)) return 'bg-amber-600/15 text-amber-300 border-amber-500/30';
+  if (['cancelled', 'on_hold'].includes(s)) return 'bg-rose-600/15 text-rose-300 border-rose-500/30';
+  return 'bg-zinc-700/30 text-zinc-300 border-zinc-600/30';
+}
+
+function fmtMoney(s: string | number) {
+  const n = typeof s === 'string' ? parseFloat(s) : s;
+  return `$${n.toFixed(2)}`;
+}
+
+function fmtDate(iso: string | null | undefined) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 export default function PortalPage() {
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
-  const [org, setOrg] = useState<Org | null>(null);
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [cart, setCart] = useState<{ cart: Cart; items: CartItem[] } | null>(null);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // create forms
-  const [newLoc, setNewLoc] = useState({ name: '', city: '' });
-  const [newDep, setNewDep] = useState({ name: '' });
-  const [newInv, setNewInv] = useState({ email: '', role: 'buyer' as 'buyer' | 'org_admin' | 'approver' | 'finance' | 'employee' | 'viewer' });
-
-  async function load() {
-    try {
-      const m = await api<Me>('/api/auth/me');
-      setMe(m);
-      if (!m.session.activeOrgId && m.memberships[0]) {
-        await api('/api/session/active-org', { json: { orgId: m.memberships[0].orgId } });
-        return load();
-      }
-      if (m.session.activeOrgId) {
-        const [o, locs, deps, mems] = await Promise.all([
-          api<Org>('/api/orgs/current'),
-          api<Location[]>('/api/orgs/current/locations'),
-          api<Department[]>('/api/orgs/current/departments'),
-          api<Member[]>('/api/users'),
+  useEffect(() => {
+    (async () => {
+      try {
+        const meData = await api<Me>('/api/auth/me');
+        setMe(meData);
+        // Parallel fetch
+        const [ordersData, cartData, notifData] = await Promise.all([
+          api<{ orders: Order[] }>('/api/orders').catch(() => ({ orders: [] })),
+          api<{ cart: Cart; items: CartItem[] }>('/api/cart').catch(() => null),
+          api<{ notifications: Notification[] }>('/api/notifications').catch(() => ({ notifications: [] })),
         ]);
-        setOrg(o); setLocations(locs); setDepartments(deps); setMembers(mems);
+        setOrders(ordersData.orders);
+        setCart(cartData);
+        setNotifications(notifData.notifications);
+        setUnreadCount(notifData.notifications.filter((n) => !n.readAt).length);
+      } catch (e) {
+        if (e instanceof ApiException && e.status === 401) {
+          router.push('/login');
+        } else {
+          setError(String(e));
+        }
+      } finally {
+        setLoading(false);
       }
-    } catch (e) {
-      if (e instanceof ApiException && e.status === 401) {
-        router.push('/login');
-        return;
-      }
-      setErr(e instanceof Error ? e.message : 'Failed to load portal');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
-
-  async function createLocation(e: FormEvent) {
-    e.preventDefault();
-    if (!newLoc.name) return;
-    try {
-      await api('/api/orgs/current/locations', { json: newLoc });
-      setNewLoc({ name: '', city: '' });
-      const locs = await api<Location[]>('/api/orgs/current/locations');
-      setLocations(locs);
-    } catch (e) { setErr(e instanceof ApiException ? e.message : 'Create location failed'); }
-  }
-
-  async function createDepartment(e: FormEvent) {
-    e.preventDefault();
-    if (!newDep.name) return;
-    try {
-      await api('/api/orgs/current/departments', { json: newDep });
-      setNewDep({ name: '' });
-      const deps = await api<Department[]>('/api/orgs/current/departments');
-      setDepartments(deps);
-    } catch (e) { setErr(e instanceof ApiException ? e.message : 'Create department failed'); }
-  }
-
-  async function invite(e: FormEvent) {
-    e.preventDefault();
-    try {
-      await api('/api/auth/invitations', { json: newInv });
-      setNewInv({ email: '', role: 'buyer' });
-      alert(`Invitation sent to ${newInv.email}`);
-    } catch (e) { setErr(e instanceof ApiException ? e.message : 'Invite failed'); }
-  }
-
-  async function switchOrg(orgId: string) {
-    try {
-      await api('/api/session/active-org', { json: { orgId } });
-      await load();
-    } catch (e) { setErr(e instanceof Error ? e.message : 'Switch org failed'); }
-  }
-
-  async function logout() {
-    await api('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
-  }
+    })();
+  }, [router]);
 
   if (loading) {
     return (
-      <main className="min-h-screen grid place-items-center">
-        <div className="text-chrome-300 text-sm">Loading your organization…</div>
+      <main className="min-h-screen flex items-center justify-center bg-midnight-950">
+        <div className="text-chrome-200">Loading…</div>
+      </main>
+    );
+  }
+  if (!me) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-midnight-950">
+        <div className="text-rose-400">{error ?? 'Could not load account'}</div>
       </main>
     );
   }
 
+  const orgName = me.memberships[0]?.orgName ?? '—';
+  const orgRole = me.memberships[0]?.role ?? '—';
+  const activeMembership = me.memberships[0];
+
+  // Aggregate stats
+  const totalSpentYTD = orders
+    .filter((o) => !['cancelled'].includes(o.status))
+    .reduce((s, o) => s + parseFloat(o.total), 0);
+  const openOrders = orders.filter((o) => !['delivered', 'cancelled'].includes(o.status));
+  const pendingApproval = orders.filter((o) => o.status === 'pending_approval');
+  const cartItemCount = cart?.items.length ?? 0;
+  const cartTotal = cart ? parseFloat(cart.cart.total) : 0;
+
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen bg-midnight-950">
       {/* Top bar */}
-      <header className="sticky top-0 z-30 border-b border-chrome-700/40 bg-midnight-900/85 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl px-6 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-purple">
-              <span className="font-display text-base font-bold text-gold-400">O</span>
-            </span>
-            <div className="leading-tight">
-              <div className="font-display text-sm font-semibold text-white">{org?.name ?? 'OSUEP'}</div>
-              <div className="text-[10px] uppercase tracking-wider text-chrome-400">{org?.type ?? 'organization'}</div>
-            </div>
+      <div className="border-b border-chrome-700/40 bg-midnight-900/80 backdrop-blur-md">
+        <div className="mx-auto max-w-7xl px-6 py-3 flex items-center justify-between text-xs">
+          <Link href="/" className="text-gold-400 hover:text-gold-200 font-mono uppercase tracking-wider">
+            ← OSUEP
           </Link>
-          <div className="flex items-center gap-3">
-            {me && me.memberships.length > 1 && (
-              <select
-                className="input py-1.5 text-xs"
-                value={me.session.activeOrgId ?? ''}
-                onChange={(e) => switchOrg(e.target.value)}
-              >
-                {me.memberships.map((m) => (
-                  <option key={m.orgId} value={m.orgId}>{m.orgName} ({m.role})</option>
-                ))}
-              </select>
-            )}
-            <span className="text-xs text-chrome-400 hidden md:block">{me?.user.email}</span>
-            <button onClick={logout} className="btn btn-ghost py-1.5 text-xs">Sign out</button>
+          <div className="flex items-center gap-4">
+            <Link href="/portal/notifications" className="relative text-chrome-200 hover:text-white">
+              Notifications
+              {unreadCount > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
+            <Link href="/portal/settings" className="text-chrome-200 hover:text-white">
+              {me.user.fullName ?? me.user.email}
+            </Link>
+            <Link href="/" onClick={async (e) => {
+              e.preventDefault();
+              await api('/api/auth/logout', { method: 'POST' });
+              router.push('/');
+            }} className="text-chrome-300 hover:text-rose-300">
+              Sign out
+            </Link>
           </div>
         </div>
-      </header>
+      </div>
 
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        {err && (
-          <div className="mb-6 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {err}
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        {/* Header */}
+        <header className="mb-8 flex items-end justify-between gap-4 flex-wrap">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-gold-400">Customer Portal</p>
+            <h1 className="mt-1 text-3xl font-bold text-white">
+              Welcome, {me.user.fullName?.split(' ')[0] ?? 'there'}
+            </h1>
+            <p className="mt-1 text-chrome-200">
+              {orgName} · <span className="text-gold-300 font-mono uppercase text-xs">{orgRole}</span>
+            </p>
           </div>
+          <div className="flex gap-2">
+            <Link href="/portal/cart" className="btn-ghost rounded-lg px-4 py-2 text-sm">
+              Cart {cartItemCount > 0 && <span className="ml-1 text-gold-300">({cartItemCount})</span>}
+            </Link>
+            <Link href="/catalog" className="rounded-lg bg-gradient-purple px-4 py-2 text-sm font-semibold text-white shadow-glow-purple">
+              + New order
+            </Link>
+          </div>
+        </header>
+
+        {/* KPI grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <Kpi label="Open orders" value={String(openOrders.length)} accent="purple" />
+          <Kpi label="Pending approval" value={String(pendingApproval.length)} accent="amber" />
+          <Kpi label="Cart subtotal" value={fmtMoney(cartTotal)} accent="gold" />
+          <Kpi label="Spent YTD" value={fmtMoney(totalSpentYTD)} accent="chrome" />
+        </div>
+
+        {/* Quick actions */}
+        <div className="mb-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <QuickLink href="/portal/orders" label="Orders" desc={`${orders.length} total`} />
+          <QuickLink href="/portal/cart" label="Cart" desc={cartItemCount > 0 ? `${cartItemCount} items` : 'empty'} />
+          <QuickLink href="/portal/artwork" label="Artwork" desc="Logo library" />
+          <QuickLink href="/portal/team" label="Team" desc="Members" />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Recent orders */}
+          <section className="lg:col-span-2">
+            <div className="rounded-2xl border border-chrome-700/40 bg-midnight-900 overflow-hidden">
+              <div className="flex items-center justify-between border-b border-chrome-700/40 px-5 py-3">
+                <h2 className="font-semibold text-white">Recent orders</h2>
+                <Link href="/portal/orders" className="text-xs text-gold-300 hover:text-gold-200">
+                  View all →
+                </Link>
+              </div>
+              {orders.length === 0 ? (
+                <div className="px-5 py-12 text-center">
+                  <p className="text-chrome-200">No orders yet.</p>
+                  <Link href="/catalog" className="mt-3 inline-block text-sm text-gold-300 hover:text-gold-200">
+                    Start shopping →
+                  </Link>
+                </div>
+              ) : (
+                <div className="divide-y divide-chrome-700/30">
+                  {orders.slice(0, 6).map((o) => (
+                    <Link
+                      key={o.id}
+                      href={`/portal/orders/${o.id}`}
+                      className="flex items-center justify-between gap-4 px-5 py-3 hover:bg-midnight-800/60"
+                    >
+                      <div>
+                        <p className="font-mono text-sm text-gold-300">{o.orderNumber}</p>
+                        <p className="text-xs text-chrome-300 mt-0.5">
+                          {fmtDate(o.placedAt)} · {o.itemCount} line item{o.itemCount !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`rounded-full border px-2 py-0.5 text-xs font-mono uppercase ${statusTone(o.status)}`}>
+                          {o.status.replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-sm font-semibold text-white tabular-nums">
+                          {fmtMoney(o.total)}
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* Notifications */}
+          <section>
+            <div className="rounded-2xl border border-chrome-700/40 bg-midnight-900">
+              <div className="flex items-center justify-between border-b border-chrome-700/40 px-5 py-3">
+                <h2 className="font-semibold text-white">Activity</h2>
+                <Link href="/portal/notifications" className="text-xs text-gold-300 hover:text-gold-200">
+                  All →
+                </Link>
+              </div>
+              {notifications.length === 0 ? (
+                <div className="px-5 py-12 text-center text-chrome-200 text-sm">
+                  No activity yet.
+                </div>
+              ) : (
+                <div className="divide-y divide-chrome-700/30 max-h-96 overflow-y-auto">
+                  {notifications.slice(0, 8).map((n) => (
+                    <Link
+                      key={n.id}
+                      href={n.href ?? '#'}
+                      className={`block px-5 py-3 hover:bg-midnight-800/60 ${!n.readAt ? 'bg-purple-900/10' : ''}`}
+                    >
+                      <p className="text-sm text-white">{n.title}</p>
+                      {n.body && <p className="mt-0.5 text-xs text-chrome-300 line-clamp-2">{n.body}</p>}
+                      <p className="mt-1 text-[10px] text-chrome-400 font-mono uppercase">{fmtDate(n.createdAt)}</p>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        {/* Cart preview */}
+        {cart && cart.items.length > 0 && (
+          <section className="mt-6">
+            <div className="rounded-2xl border border-chrome-700/40 bg-midnight-900 overflow-hidden">
+              <div className="flex items-center justify-between border-b border-chrome-700/40 px-5 py-3">
+                <h2 className="font-semibold text-white">Cart</h2>
+                <Link href="/portal/cart" className="text-xs text-gold-300 hover:text-gold-200">
+                  Review →
+                </Link>
+              </div>
+              <div className="divide-y divide-chrome-700/30">
+                {cart.items.map((it) => (
+                  <div key={it.id} className="flex items-center justify-between gap-4 px-5 py-3">
+                    <div>
+                      <p className="text-sm text-white">{it.productName}</p>
+                      <p className="text-xs text-chrome-300 font-mono">
+                        {it.sku}
+                        {it.size ? ` · ${it.size}` : ''}
+                        {it.color ? ` · ${it.color}` : ''}
+                        {it.customization?.decorationMethod ? ` · ${it.customization.decorationMethod}` : ''}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-white tabular-nums">
+                        {fmtMoney(parseFloat(it.unitPrice) * it.quantity)}
+                      </p>
+                      <p className="text-xs text-chrome-300">qty {it.quantity}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex items-center justify-between border-t border-chrome-700/40 px-5 py-3">
+                <span className="text-sm text-chrome-200">Subtotal</span>
+                <span className="text-lg font-bold text-gold-300 tabular-nums">
+                  {fmtMoney(cartTotal)}
+                </span>
+              </div>
+            </div>
+          </section>
         )}
 
-        {/* Welcome / KPI strip */}
-        <section className="grid md:grid-cols-4 gap-3 mb-10">
+        {/* Sub-navigation */}
+        <nav className="mt-10 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
           {[
-            { k: 'Members', v: members.length, sub: 'org users' },
-            { k: 'Locations', v: locations.length, sub: 'physical sites' },
-            { k: 'Departments', v: departments.length, sub: 'org units' },
-            { k: 'Your role', v: me?.memberships.find((m) => m.orgId === me.session.activeOrgId)?.role ?? '—', sub: 'in this org' },
-          ].map((s) => (
-            <div key={s.k} className="card">
-              <div className="text-3xl font-semibold chrome-text">{String(s.v)}</div>
-              <div className="text-xs uppercase tracking-wider text-chrome-300 mt-1">{s.k}</div>
-              <div className="text-xs text-chrome-400">{s.sub}</div>
-            </div>
+            { href: '/portal/team', label: 'Team' },
+            { href: '/portal/locations', label: 'Locations' },
+            { href: '/portal/artwork', label: 'Artwork' },
+            { href: '/portal/documents', label: 'Documents' },
+            { href: '/portal/messages', label: 'Messages' },
+            { href: '/portal/settings', label: 'Settings' },
+          ].map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="rounded-xl border border-chrome-700/40 bg-midnight-900/60 px-4 py-3 text-sm text-chrome-100 hover:border-gold-500/60 hover:text-gold-200 transition"
+            >
+              {l.label}
+            </Link>
           ))}
-        </section>
-
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Locations */}
-          <section className="card">
-            <h2 className="font-display text-lg font-semibold text-white">Locations</h2>
-            <p className="text-xs text-chrome-400 mb-4">Physical sites within this organization.</p>
-            <ul className="space-y-2 mb-4">
-              {locations.map((l) => (
-                <li key={l.id} className="flex items-center justify-between rounded-lg border border-chrome-700/60 bg-midnight-900/40 px-3 py-2">
-                  <div>
-                    <div className="text-sm text-white">{l.name}</div>
-                    <div className="text-xs text-chrome-400">{l.city ?? '—'} {l.code ? `· ${l.code}` : ''}</div>
-                  </div>
-                  {l.isPrimary && <span className="chip text-ink-300 border-ink-500/30">Primary</span>}
-                </li>
-              ))}
-              {locations.length === 0 && <li className="text-sm text-chrome-400">No locations yet.</li>}
-            </ul>
-            <form onSubmit={createLocation} className="space-y-2 border-t border-chrome-700/40 pt-4">
-              <input className="input" placeholder="Location name" value={newLoc.name} onChange={(e) => setNewLoc({ ...newLoc, name: e.target.value })} />
-              <input className="input" placeholder="City" value={newLoc.city} onChange={(e) => setNewLoc({ ...newLoc, city: e.target.value })} />
-              <button className="btn btn-primary w-full py-2 text-sm">Add location</button>
-            </form>
-          </section>
-
-          {/* Departments */}
-          <section className="card">
-            <h2 className="font-display text-lg font-semibold text-white">Departments</h2>
-            <p className="text-xs text-chrome-400 mb-4">Organizational units — buyers, finance, etc.</p>
-            <ul className="space-y-2 mb-4">
-              {departments.map((d) => (
-                <li key={d.id} className="rounded-lg border border-chrome-700/60 bg-midnight-900/40 px-3 py-2 text-sm text-white">
-                  {d.name} {d.code ? <span className="text-xs text-chrome-400">· {d.code}</span> : null}
-                </li>
-              ))}
-              {departments.length === 0 && <li className="text-sm text-chrome-400">No departments yet.</li>}
-            </ul>
-            <form onSubmit={createDepartment} className="space-y-2 border-t border-chrome-700/40 pt-4">
-              <input className="input" placeholder="Department name" value={newDep.name} onChange={(e) => setNewDep({ name: e.target.value })} />
-              <button className="btn btn-primary w-full py-2 text-sm">Add department</button>
-            </form>
-          </section>
-
-          {/* Invite + Members */}
-          <section className="card">
-            <h2 className="font-display text-lg font-semibold text-white">Team</h2>
-            <p className="text-xs text-chrome-400 mb-4">Invite users and manage roles.</p>
-            <ul className="space-y-2 mb-4 max-h-48 overflow-y-auto scrollbar-thin">
-              {members.map((m) => (
-                <li key={m.membershipId} className="rounded-lg border border-chrome-700/60 bg-midnight-900/40 px-3 py-2 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-white truncate">{m.fullName ?? m.email}</span>
-                    <span className="chip text-xs">{m.role}</span>
-                  </div>
-                  <div className="text-xs text-chrome-400 truncate">{m.email} {m.mfaEnabled ? '· MFA' : ''}</div>
-                </li>
-              ))}
-            </ul>
-            <form onSubmit={invite} className="space-y-2 border-t border-chrome-700/40 pt-4">
-              <input type="email" className="input" placeholder="email@company.com" value={newInv.email} onChange={(e) => setNewInv({ ...newInv, email: e.target.value })} />
-              <select className="input" value={newInv.role} onChange={(e) => setNewInv({ ...newInv, role: e.target.value as any })}>
-                <option value="org_admin">Org Admin</option>
-                <option value="buyer">Buyer</option>
-                <option value="approver">Approver</option>
-                <option value="finance">Finance</option>
-                <option value="employee">Employee</option>
-                <option value="viewer">Viewer</option>
-              </select>
-              <button className="btn btn-gold w-full py-2 text-sm">Send invitation</button>
-            </form>
-          </section>
-        </div>
-
-        {/* Audit hint */}
-        <section className="mt-10 card bg-gradient-chrome">
-          <h3 className="font-display text-base font-semibold text-white">Audit trail</h3>
-          <p className="text-sm text-chrome-300 mt-1">
-            Every action you take on this portal is recorded in an immutable audit log.
-            Available to org admins and finance roles via <code className="text-ink-300">GET /api/audit</code>.
-          </p>
-        </section>
+        </nav>
       </div>
     </main>
+  );
+}
+
+function Kpi({ label, value, accent }: { label: string; value: string; accent: 'purple' | 'amber' | 'gold' | 'chrome' }) {
+  const tone = {
+    purple: 'from-purple-500/20 text-purple-200',
+    amber: 'from-amber-500/20 text-amber-200',
+    gold: 'from-yellow-500/20 text-yellow-200',
+    chrome: 'from-zinc-500/20 text-zinc-200',
+  }[accent];
+  return (
+    <div className={`rounded-2xl border border-chrome-700/40 bg-gradient-to-br ${tone} to-transparent p-5`}>
+      <p className="text-xs uppercase tracking-wider text-chrome-300">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-white tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+function QuickLink({ href, label, desc }: { href: string; label: string; desc: string }) {
+  return (
+    <Link
+      href={href}
+      className="rounded-xl border border-chrome-700/40 bg-midnight-900/60 p-4 hover:border-gold-500/60 transition"
+    >
+      <p className="text-sm font-semibold text-white">{label}</p>
+      <p className="text-xs text-chrome-300 mt-0.5">{desc}</p>
+    </Link>
   );
 }

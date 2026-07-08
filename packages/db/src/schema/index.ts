@@ -5,3 +5,4 @@ export * from './rbac';
 export * from './audit';
 export * from './sessions';
 export * from './catalog';
+export * from './orders';
